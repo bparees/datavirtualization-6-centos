@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo -n "Saving DataVirtualization configuration..."
+JBOSS_DIR=$INSTALLDIR/jboss-eap-6.1
+
+tar -zcf /tmp/artifacts/dv.tar.gz $JBOSS_DIR/standalone/configuration/*properties
+
+echo "done"

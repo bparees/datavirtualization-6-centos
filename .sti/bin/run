@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "JBoss Data Virtualization Start script"
+$HOME/dv/jboss-eap-6.1/bin/standalone.sh -c standalone.xml -b 0.0.0.0 -bmanagement 0.0.0.0

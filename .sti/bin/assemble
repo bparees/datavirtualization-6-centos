@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Generate a random string from /dev/urandom
+# Arguments:
+#  - Desired length (optional)
+#  - Possible character space (optional)
+#  - Patterns to omit (optional)
+function random_string {
+  local DEFAULT_SPACE="a-zA-Z0-9"
+  local DEFAULT_LEN=12
+
+  local len=${1-$DEFAULT_LEN}
+  local space=${2-"${DEFAULT_SPACE}"}
+  local omit=${3-""}
+
+  local rnd=$(head -n 50 /dev/urandom | tr -dc $space | fold -w $len)
+  [ -n "${omit}" ] && rnd=$(echo "${rnd}" | grep -v "${omit}")
+  echo $(echo "${rnd}" | head -n1)
+
+}
+
+# Generate a password
+# Arguments:
+#  - Desired length (optional)
+#  - Character space (optional)
+#  - Ignore pattern (optional)
+function generate_password {
+  local DEFAULT_LEN=12
+  local DEFAULT_CHAR="a-np-zA-NP-Z1-9-_" #Dash, underscore, Alphanumeric except o,O,0
+  local DEFAULT_IGNORE="^-"
+
+  echo $(random_string ${1-$DEFAULT_LEN} ${2-$DEFAULT_CHAR} ${3-$DEFAULT_IGNORE})
+}
+
+function restore_saved_artifacts() {
+  if [ -f /tmp/artifacts/dv.tar.gz ]; then
+    pushd / &> /dev/null
+    echo -n "Restoring saved artifacts from prior build..."
+    tar zxf /tmp/artifacts/dv.tar.gz
+    echo "done"
+    popd &> /dev/null
+    return 0
+  fi
+  return 1
+}
+
+function parse_password() {
+   echo `grep $1 $2 | awk -F = '{print $2}'`
+}
+
+JBOSS_DIR=$INSTALLDIR/jboss-eap-6.1
+JBOSS_CFG_DIR=$JBOSS_DIR/standalone/configuration
+
+
+teiiduser_username=user
+dbadmin_username=dbadmin
+msuser_username=msuser
+msadmin_username=msadmin
+
+if restore_saved_artifacts; then
+    teiiduser_password=$(parse_password user= $JBOSS_CFG_DIR/teiid-security-users.properties)
+    dbadmin_password=$(parse_password dbadmin= $JBOSS_CFG_DIR/teiid-security-users.properties)
+    msuser_password=$(parse_password msuser= $JBOSS_CFG_DIR/modeshape-users.properties)
+    msadmin_password=$(parse_password msadmin= $JBOSS_CFG_DIR/modeshape-users.properties)
+else
+
+    # Set usernames, generate passwords and create env variables
+    echo 'Generating username and password'
+
+    teiiduser_password=$(generate_password)
+    dbadmin_password=$(generate_password)
+    msuser_password=$(generate_password)
+    msadmin_password=$(generate_password)
+
+    # env vars
+    #
+    #echo "$teiiduser_username" > $JBOSS_DIR/env/OPENSHIFT_DV_TEIIDUSER_USERNAME
+    #echo "$teiiduser_password" > $JBOSS_DIR/env/OPENSHIFT_DV_TEIIDUSER_PASSWORD
+    #echo "$dbadmin_username" > $JBOSS_DIR/env/OPENSHIFT_DV_DBADMIN_USERNAME
+    #echo "$dbadmin_password" > $JBOSS_DIR/env/OPENSHIFT_DV_DBADMIN_PASSWORD
+    #echo "$msuser_username" > $JBOSS_DIR/env/OPENSHIFT_DV_MSUSER_USERNAME
+    #echo "$msuser_password" > $JBOSS_DIR/env/OPENSHIFT_DV_MSUSER_PASSWORD
+    #echo "$msadmin_username" > $JBOSS_DIR/env/OPENSHIFT_DV_MSADMIN_USERNAME
+    #echo "$msadmin_password" > $JBOSS_DIR/env/OPENSHIFT_DV_MSADMIN_PASSWORD
+
+    # Create the teiid-security-users.properties file
+    # ${JBOSS_DIR}/standalone/deployments
+    echo "# username=password" > "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
+    echo "${teiiduser_username}=${teiiduser_password}" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
+    echo "${dbadmin_username}=${dbadmin_password}" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
+
+    # Create the teiid-security-roles.properties file
+    #
+    echo "# username=role1,role2" > "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
+    echo "${teiiduser_username}=user,odata,rest" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
+    echo "${dbadmin_username}=admin" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
+
+    # Create the modeshape-users.properties file
+    #
+    echo "# username=password" > "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
+    echo "${msuser_username}=${msuser_password}" >> "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
+    echo "${msadmin_username}=${msadmin_password}" >> "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
+
+    # Create the modeshape-roles.properties file
+    #
+    echo "# username=role1,role2" > "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
+    echo "${msuser_username}=connect,readonly" >> "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
+    echo "${msadmin_username}=connect,admin,readonly,readwrite" >> "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
+fi
+
+echo ""
+echo "Data Virtualization ${version} image constructed.  Please make note of these credentials:"
+echo ""
+echo "              Teiid User: $teiiduser_username"
+echo "     Teiid User Password: $teiiduser_password"
+echo ""
+echo "         Dashboard Admin: $dbadmin_username"
+echo "Dashboard Admin Password: $dbadmin_password"
+echo ""
+echo "          Modeshape User: $msuser_username"
+echo " Modeshape User Password: $msuser_password"
+echo ""
+echo "         Modeshape Admin: $msadmin_username"
+echo "Modeshape Admin Password: $msadmin_password"
+echo ""
