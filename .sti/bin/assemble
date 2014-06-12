@@ -51,7 +51,7 @@ function parse_password() {
 JBOSS_DIR=$INSTALLDIR/jboss-eap-6.1
 JBOSS_CFG_DIR=$JBOSS_DIR/standalone/configuration
 
-
+# Generate new userid/passwords or restore them from the previous image.
 teiiduser_username=user
 dbadmin_username=dbadmin
 msuser_username=msuser
@@ -85,27 +85,32 @@ else
 
     # Create the teiid-security-users.properties file
     # ${JBOSS_DIR}/standalone/deployments
-    echo "# username=password" > "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
-    echo "${teiiduser_username}=${teiiduser_password}" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
-    echo "${dbadmin_username}=${dbadmin_password}" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-users.properties"
+    echo "# username=password" > "${JBOSS_CFG_DIR}/teiid-security-users.properties"
+    echo "${teiiduser_username}=${teiiduser_password}" >> "${JBOSS_CFG_DIR}/teiid-security-users.properties"
+    echo "${dbadmin_username}=${dbadmin_password}" >> "${JBOSS_CFG_DIR}/teiid-security-users.properties"
 
     # Create the teiid-security-roles.properties file
     #
-    echo "# username=role1,role2" > "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
-    echo "${teiiduser_username}=user,odata,rest" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
-    echo "${dbadmin_username}=admin" >> "${JBOSS_DIR}/standalone/configuration/teiid-security-roles.properties"
+    echo "# username=role1,role2" > "${JBOSS_CFG_DIR}/teiid-security-roles.properties"
+    echo "${teiiduser_username}=user,odata,rest" >> "${JBOSS_CFG_DIR}/teiid-security-roles.properties"
+    echo "${dbadmin_username}=admin" >> "${JBOSS_CFG_DIR}/teiid-security-roles.properties"
 
     # Create the modeshape-users.properties file
     #
-    echo "# username=password" > "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
-    echo "${msuser_username}=${msuser_password}" >> "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
-    echo "${msadmin_username}=${msadmin_password}" >> "${JBOSS_DIR}/standalone/configuration/modeshape-users.properties"
+    echo "# username=password" > "${JBOSS_CFG_DIR}/modeshape-users.properties"
+    echo "${msuser_username}=${msuser_password}" >> "${JBOSS_CFG_DIR}/modeshape-users.properties"
+    echo "${msadmin_username}=${msadmin_password}" >> "${JBOSS_CFG_DIR}/modeshape-users.properties"
 
     # Create the modeshape-roles.properties file
     #
-    echo "# username=role1,role2" > "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
-    echo "${msuser_username}=connect,readonly" >> "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
-    echo "${msadmin_username}=connect,admin,readonly,readwrite" >> "${JBOSS_DIR}/standalone/configuration/modeshape-roles.properties"
+    echo "# username=role1,role2" > "${JBOSS_CFG_DIR}/modeshape-roles.properties"
+    echo "${msuser_username}=connect,readonly" >> "${JBOSS_CFG_DIR}/modeshape-roles.properties"
+    echo "${msadmin_username}=connect,admin,readonly,readwrite" >> "${JBOSS_CFG_DIR}/modeshape-roles.properties"
+fi
+
+if [ -d /tmp/src/cfg ]; then
+  echo "Copying config files from project..."
+  cp -ad /tmp/src/cfg/* ${JBOSS_CFG_DIR}
 fi
 
 echo ""
