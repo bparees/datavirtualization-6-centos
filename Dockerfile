@@ -1,11 +1,11 @@
 #######################################################################
 #                                                                     #
-# Creates a base Fedora image with JBoss Data Virtualization 6.0.0.GA #
+# Creates a base Centos image with JBoss Data Virtualization 6.0.0.GA #
 #                                                                     #
 #######################################################################
 
 # Use the centos base image
-FROM fedora
+FROM centos
 
 MAINTAINER bparees <bparees@redhat.com>
 
@@ -13,7 +13,7 @@ MAINTAINER bparees <bparees@redhat.com>
 # Install Java JDK, SSH and other useful cmdline utilities and updated the system
 # install mysql jdbc client
 #################################################################################
-RUN yum -y install java-1.7.0-openjdk which telnet unzip openssh-server sudo openssh-clients mysql-connector-java && \
+RUN yum -y install java-1.7.0-openjdk which telnet unzip openssh-server sudo openssh-clients mysql-connector-java tar && \
     yum -y update && \
     yum clean all
 
@@ -59,6 +59,6 @@ RUN echo "#!/bin/sh" && \
 
 EXPOSE 22 3306 5432 8080 9990 27017
 
-ENV STI_SCRIPTS_URL https://raw.githubusercontent.com/bparees/datavirtualization-6-fedora/master/.sti/bin
+ENV STI_SCRIPTS_URL https://raw.githubusercontent.com/bparees/datavirtualization-6-centos/master/.sti/bin
 
 CMD /home/jboss/run.sh
